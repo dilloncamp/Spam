@@ -38,17 +38,17 @@ library(shinydashboard)
 ```
 
 ### Load Packages
-```
+```{python, engine.path = "C:/Users/dillo/Anaconda2/envs/dillonPy36", warning = FALSE, message = FALSE, results = FALSE}
 import scipy.io as sio
 from sklearn import svm
 import numpy as np
-import h5py
 import pandas as pd
+import h5py
 ```
 
 ### Load Email Data
 
-```
+```{python, engine.path = "C:/Users/dillo/Anaconda2/envs/dillonPy36",message = FALSE}
 traindata = sio.loadmat('spamTrain.mat')
 X = traindata['X']
 y = traindata['y']
@@ -65,7 +65,7 @@ The dataset I am using is a preprocessed set of emails from Stanford's Machine L
 
 ## Train Support Vector Machine
 
-```
+```{python, engine.path = "C:/Users/dillo/Anaconda2/envs/dillonPy36",message = FALSE}
 ##Train SVM with linear kernel
 ##Use for loop to determine best value for regularization parameter C
 C = [0.01,0.03,0.1,0.3,1,3,10]
@@ -94,13 +94,10 @@ for i in range(0,len(C)):
 
 ## Results
 
-```
+```{python, engine.path = "C:/Users/dillo/Anaconda2/envs/dillonPy36"}
 print(testingAccuracy)
-Output: array([98. , 99. , 98.9, 98.3, 97.8, 97.3, 97.5])
 print(trainingAccuracy)
-Output: array([ 98.325,  99.425,  99.825,  99.975,  99.975,  99.975, 100.   ])
 print(f1)
-Output: array([0.96710526, 0.98381877, 0.98228663, 0.9726248 , 0.96451613, 0.95638126, 0.95974235])
 ```
 
 Since the test set accuracy is highest for C=.03, I use C=.03 as the regularization parameter. The support vector machine was able to classify the test email set with an accuracy of 99.0% and an F1 score of 98.38%. 
