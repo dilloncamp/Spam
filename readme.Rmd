@@ -1,0 +1,162 @@
+---
+title: "Spam Classification Using a Support Vector Machine in Python and R"
+author: "Dillon"
+date: "May 2, 2018"
+output:
+  html_document:
+    theme: paper
+    number_sections: true
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    #code_folding: show
+    #css: styles.css
+    #flatly, cosmo, paper
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this project I use a support vector machine (SVM) to classify a preprocessed dataset of emails as spam or not with a 98.9% test set accuracy. A support vector machine is a supervised machine learning model used for classification.
+
+
+You can download my code at [github](https://github.com/dilloncamp/spam) to follow along. I begin this guide with Python and the scikit-learn package and then perform the same analysis in R with the e1071 package in R.
+
+
+# Python SVM Walkthrough
+
+## Setup
+
+```{r, echo = FALSE, warning= FALSE, results = 'hide', message=FALSE}
+library(shiny)
+library(shinydashboard)
+```
+
+### Load Packages
+```
+import scipy.io as sio
+from sklearn import svm
+import numpy as np
+import h5py
+import pandas as pd
+```
+
+### Load Email Data
+
+```
+traindata = sio.loadmat('spamTrain.mat')
+X = traindata['X']
+y = traindata['y']
+##Validation dataset is saved in a different format
+##So the process to load it is slightly different
+f = h5py.File('spamTest2.mat','r') 
+Xtest = np.array(f.get('Xtest'))
+Xtest = Xtest.T
+ytest = np.array(f.get('ytest'))
+ytest = ytest.T
+```
+
+The dataset I am using is a preprocessed set of emails from Stanford's Machine Learning course on Coursera. The 1899 X values represent words that appeared at least 100 times in the entire email dataset. For a given email, X will be 1 if that word is present and 0 otherwise. The value Y represents whether the email is spam (Y=1) or not (Y=0).
+
+## Train Support Vector Machine
+
+```
+##Train SVM with linear kernel
+##Use for loop to determine best value for regularization parameter C
+C = [0.01,0.03,0.1,0.3,1,3,10]
+trainingAccuracy = np.empty([len(C)])
+testingAccuracy = np.empty([len(C)])
+f1 = np.empty([len(C)])
+for i in range(0,len(C)):
+    clf = svm.SVC(C=C[i],kernel='linear')
+    clf.fit(X, y.ravel())
+
+    trainPredict = clf.predict(X)
+    trainingAccuracy[i] = np.mean(trainPredict==y.ravel())*100
+    
+    testPredict = clf.predict(Xtest)
+    testingAccuracy[i] = np.mean(testPredict==ytest.ravel())*100
+    
+    #f1 score
+    tp = (np.logical_and(testPredict[:] == 1,ytest.ravel()[:] == 1))
+    p = ytest.ravel() == 1
+    recall = sum(tp)/sum(p)
+    fp = (np.logical_and(testPredict[:] == 1,ytest.ravel()[:] == 0))
+    precision = sum(tp)/(sum(tp)+sum(fp))
+    f1[i] = (2*(precision*recall))/(precision+recall)
+    
+```
+
+## Results
+
+```
+print(testingAccuracy)
+Output: array([98. , 99. , 98.9, 98.3, 97.8, 97.3, 97.5])
+print(trainingAccuracy)
+Output: array([ 98.325,  99.425,  99.825,  99.975,  99.975,  99.975, 100.   ])
+print(f1)
+Output: array([0.96710526, 0.98381877, 0.98228663, 0.9726248 , 0.96451613, 0.95638126, 0.95974235])
+```
+
+Since the test set accuracy is highest for C=.03, I use C=.03 as the regularization parameter. The support vector machine was able to classify the test email set with an accuracy of 99.0% and an F1 score of 98.38%. 
+
+
+# R Code
+
+## Setup
+
+### Load Packages
+
+```{r, eval = FALSE}
+library(e1071)
+library(R.matlab)
+library(rhdf5)
+```
+
+### Load Data
+
+```{r, eval = FALSE}
+traindata <- readMat('spamTrain.mat')
+X <- traindata$X
+Y <- traindata$y
+Xtest <- h5read('spamTest2.mat','Xtest')
+ytest <- h5read('spamTest2.mat','ytest')
+```
+
+## Train Model
+
+```{r, eval = FALSE}
+#Using cost determined in Python
+clf <- svm(cost = .03, x=X,y=Y,kernel="linear",scale=FALSE,type="C-classification")
+trainPredict <- fitted(clf)
+trainingAccuracy <- mean(trainPredict == Y)
+pred <- predict(clf, Xtest)
+testingAccuracy <- mean(pred == ytest)
+
+#f1 score
+tp = pred== 1 & ytest == 1
+p = ytest == 1
+recall = sum(tp)/sum(p)
+fp = pred == 1 & ytest == 0
+precision = sum(tp)/(sum(tp)+sum(fp))
+f1 = (2*(precision*recall))/(precision+recall)
+```
+
+## Results
+
+```{r, message = FALSE, echo = FALSE}
+load("spamresults.RData")
+```
+
+```{r, echo = TRUE}
+print(testingAccuracy)
+print(f1)
+```
+
+
+
